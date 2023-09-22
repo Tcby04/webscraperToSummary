@@ -1,16 +1,20 @@
-import os
 from transformers import pipeline
+
+# Define the model and its configuration
+model_name = "sshleifer/distilbart-cnn-12-6"  # Replace with the model name you want to use
+
+# Create the summarization pipeline with your specified model
+summarization = pipeline("summarization", model=model_name)
+
+# Rest of your code remains the same
+import os
 import time
 from tqdm import tqdm
 
-print(time)
 start = time.time()
 
-# using pipeline API for summarization task
-summarization = pipeline("summarization")
-
 # Specify the folder where your text files are located
-folder_path = '/Volumes/@2TB/Programs/Programs  python/2023-09-22'  # Replace with the actual folder path
+folder_path = '/Volumes/@2TB/Programs/Programs  python/webscraper/2023-09-22'  # Replace with the actual folder path
 
 # Initialize an empty string to store the summarized text
 summary_text = ""
@@ -41,4 +45,3 @@ print("Summary:",'\n\n', summary_text)
 
 end = time.time()
 print("Time taken:", end - start)
-print(time)
