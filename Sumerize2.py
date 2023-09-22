@@ -1,15 +1,15 @@
 from transformers import pipeline
 
+import os
+import time
+from tqdm import tqdm
+
 # Define the model and its configuration
 model_name = "sshleifer/distilbart-cnn-12-6"  # Replace with the model name you want to use
 
 # Create the summarization pipeline with your specified model
 summarization = pipeline("summarization", model=model_name)
 
-# Rest of your code remains the same
-import os
-import time
-from tqdm import tqdm
 
 start = time.time()
 
