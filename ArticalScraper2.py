@@ -2,6 +2,9 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import datetime
+from tqdm import tqdm
+
+print('Starting Writing....')
 
 # Function to clean non-ASCII characters from a string
 def clean_non_ascii(text):
@@ -39,12 +42,15 @@ output_directory = datetime.date.today().strftime("%Y-%m-%d")
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
+# Create or open the "Articles.txt" file to write scraped text (overwrite if it exists)
+articles_file = open("Articles.txt", "w", encoding="utf-8")
+
 # Read links from the text file
 with open('links.txt', 'r') as file:
     links = file.read().splitlines()
 
 # Scrape and save each article in the output directory with the title as the filename
-for link in links:
+for link in tqdm(links, unit='article'):
     # Scrape title and text from the link
     scraped_title, scraped_text = scrape_text_and_title_from_url(link.strip())
     
@@ -56,5 +62,14 @@ for link in links:
         article_filename = os.path.join(output_directory, f"{cleaned_title}.txt")
         with open(article_filename, 'w', encoding='utf-8') as article_file:
             article_file.write(scraped_text)
+        
+        # Write the scraped text to the "Articles.txt" file
+        articles_file.write(f"Title: {scraped_title}\n")
+        articles_file.write(scraped_text + "\n\n")
 
-print("Scraping and writing complete.")
+# Close the "Articles.txt" file
+articles_file.close()
+
+print("Article Writing complete.")
+print ('\n') 
+

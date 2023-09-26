@@ -1,8 +1,10 @@
+import warnings
 from transformers import pipeline
-
 import os
-import time
 from tqdm import tqdm
+
+
+print('Starting Summarization....')
 
 # Define the model and its configuration
 model_name = "sshleifer/distilbart-cnn-12-6"  # Replace with the model name you want to use
@@ -10,38 +12,81 @@ model_name = "sshleifer/distilbart-cnn-12-6"  # Replace with the model name you 
 # Create the summarization pipeline with your specified model
 summarization = pipeline("summarization", model=model_name)
 
+# Specify the name of the file containing articles
+file_name = 'Articles.txt'  # Replace with the actual filename
 
-start = time.time()
-
-# Specify the folder where your text files are located
-folder_path = '/Volumes/@2TB/Programs/Programs  python/webscraper/2023-09-22'  # Replace with the actual folder path
-
-# Initialize an empty string to store the summarized text
-summary_text = ""
-
-# Define the encoding to use when reading files
+# Define the encoding to use when reading the file
 file_encoding = 'utf-8'  # Change to the appropriate encoding if needed
 
-# List of files in the folder
-files = [filename for filename in os.listdir(folder_path) if filename.endswith('.txt') and not filename.startswith('._')]
+# Maximum sequence length for chunking
+max_seq_length = 1024  # Maximum sequence length for the model
 
-# Create a tqdm progress bar
-with tqdm(total=len(files)) as pbar:
-    for filename in files:
-        file_path = os.path.join(folder_path, filename)
-        try:
-            with open(file_path, 'r', encoding=file_encoding) as file:
-                text = file.read()
+# Specify the output file name
+output_file_name = 'Summarized_Articles.txt'  # Replace with your desired output file name
 
-            # Summarize the file content and append it to summary_text
-            summary = summarization(text, max_length=150, min_length=30, do_sample=False)[0]['summary_text']
-            summary_text += summary + '\n\n'  # Add a newline between summarized files
-        except UnicodeDecodeError:
-            print(f"Skipping file {filename} due to decoding error.")
+try:
+    # Check if the file exists
+    if os.path.exists(file_name):
+        with open(file_name, 'r', encoding=file_encoding) as file:
+            lines = file.readlines()
 
-        pbar.update(1)  # Update the progress bar
+        # Initialize variables to store article titles and content
+        article_titles = []
+        article_contents = []
+        current_article = ""
 
-print("Summary:",'\n\n', summary_text)
+        # Initialize a tqdm progress bar with total size as the unit
+        with tqdm(total=len(lines), unit='line', dynamic_ncols=True) as pbar:
+            # Iterate through the lines in the file
+            for line in lines:
+                if line.startswith("Title:"):
+                    # If a line starts with "Title:", it indicates the start of a new article
+                    if current_article:
+                        if len(current_article) > max_seq_length:
+                            # Chunk the current article into segments
+                            text_chunks = [current_article[i:i+max_seq_length] for i in range(0, len(current_article), max_seq_length)]
+                            chunked_summaries = []
 
-end = time.time()
-print("Time taken:", end - start)
+                            # Summarize each chunk
+                            for chunk in text_chunks:
+                                with warnings.catch_warnings():
+                                    warnings.filterwarnings("ignore", category=UserWarning)  # Ignore specific warnings
+                                    summary = summarization(chunk, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+                                chunked_summaries.append(summary)
+
+                            # Combine chunked summaries
+                            combined_summary = '\n'.join(chunked_summaries)
+                            article_titles.append(current_title)
+                            article_contents.append(combined_summary)
+                        else:
+                            # Summarize the current article as is
+                            with warnings.catch_warnings():
+                                warnings.filterwarnings("ignore", category=UserWarning)  # Ignore specific warnings
+                                summary = summarization(current_article, max_length=300, min_length=30, do_sample=False)[0]['summary_text']
+                            article_titles.append(current_title)
+                            article_contents.append(summary)
+
+                    # Extract the title for the new article
+                    current_title = line[len("Title:"):].strip()
+                    current_article = ""
+                else:
+                    # Append the line to the current article content
+                    current_article += line
+
+                # Update the progress bar
+                pbar.update(1)
+
+        # Write the summaries to an output file
+        with open(output_file_name, 'w', encoding=file_encoding) as output_file:
+            for i in range(len(article_titles)):
+                output_file.write(f"Title: {article_titles[i]}\n")
+                output_file.write("Summary:\n")
+                output_file.write(article_contents[i] + "\n\n")
+
+        print("Articles have been Sumerized")
+
+    else:
+        print(f"File '{file_name}' not found in the current directory.")
+
+except UnicodeDecodeError:
+    print(f"Skipping file '{file_name}' due to decoding error.")
